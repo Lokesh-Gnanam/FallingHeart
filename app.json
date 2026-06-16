@@ -1,4 +1,20 @@
 {
-  "name": "FallingHearts",
-  "slug": "FallingHearts"
+  "expo": {
+    "name": "FallingHearts",
+    "slug": "FallingHearts",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "fallinghearts",
+    "plugins": [
+      "expo-router",
+      "expo-splash-screen"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.fallinghearts.app"
+    }
+  }
 }
