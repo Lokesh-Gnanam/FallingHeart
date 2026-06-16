@@ -16,7 +16,7 @@ export default function SplashScreen() {
   };
 
   if (isAuthenticated && user) {
-    return <Redirect href="/(tabs)/chat" />;
+    return <Redirect href="/(tabs)/home" />;
   }
 
 

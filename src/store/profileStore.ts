@@ -105,11 +105,8 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
         display_name: displayName,
         username: username.toLowerCase().trim(),
         bio,
+        avatar_url: avatarUrl || null,
       };
-
-      if (avatarUrl) {
-        updateData.avatar_url = avatarUrl;
-      }
 
       const { error } = await supabase
         .from('profiles')
@@ -125,7 +122,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
           displayName,
           username: username.toLowerCase().trim(),
           bio,
-          avatarUrl: avatarUrl || user.avatarUrl,
+          avatarUrl: avatarUrl || undefined,
         },
       });
 

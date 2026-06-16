@@ -3,13 +3,12 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   Pressable,
   Switch,
-  Platform,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { 
   Bell, 
@@ -25,10 +24,13 @@ import { MotiView } from 'moti';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useProfileStore } from '../../../src/store/profileStore';
 import { ProfileAvatar } from '../../../src/components/ProfileAvatar';
-import { COLORS, TYPOGRAPHY, SHADOWS } from '../../../src/theme';
+import { useTheme, LIGHT_COLORS, TYPOGRAPHY, SHADOWS } from '../../../src/theme';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
   const currentUser = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   
@@ -41,9 +43,25 @@ export default function ProfileScreen() {
     return () => unsubscribe();
   }, []);
 
-  const handleLogout = async () => {
-    await logout();
-    router.replace('/');
+  const handleLogout = () => {
+    Alert.alert(
+      'Confirm Log Out',
+      'Are you sure you want to log out of your session?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Yes, Log Out',
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+            router.replace('/auth/login');
+          },
+        },
+      ]
+    );
   };
 
   const renderSettingToggle = (
@@ -60,9 +78,9 @@ export default function ProfileScreen() {
       <Switch
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: '#dcbfc9', true: COLORS.secondary }}
-        thumbColor={COLORS.white}
-        ios_backgroundColor="#dcbfc9"
+        trackColor={{ false: colors.border, true: colors.secondary }}
+        thumbColor={LIGHT_COLORS.white}
+        ios_backgroundColor={colors.border}
       />
     </View>
   );
@@ -74,7 +92,6 @@ export default function ProfileScreen() {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Profile & Settings</Text>
         </View>
-
         {/* Profile Card Info */}
         <MotiView
           from={{ opacity: 0, scale: 0.95 }}
@@ -92,7 +109,7 @@ export default function ProfileScreen() {
               onPress={() => router.push('/profile/edit')}
               style={[styles.editButton, SHADOWS.soft]}
             >
-              <Edit2 size={16} color={COLORS.primary} />
+              <Edit2 size={16} color={colors.primary} />
             </Pressable>
           </View>
           
@@ -109,7 +126,7 @@ export default function ProfileScreen() {
           <Text style={styles.sectionHeader}>COMMUNICATION</Text>
           <View style={[styles.card, SHADOWS.soft]}>
             {renderSettingToggle(
-              <Bell size={18} color={COLORS.secondary} />,
+              <Bell size={18} color={colors.secondary} />,
               'Push Notifications',
               settings.pushNotifications,
               (val) => updateSetting('pushNotifications', val)
@@ -118,7 +135,7 @@ export default function ProfileScreen() {
             <View style={styles.separator} />
             
             {renderSettingToggle(
-              <Eye size={18} color={COLORS.secondary} />,
+              <Eye size={18} color={colors.secondary} />,
               'Online Status',
               settings.onlineStatus,
               (val) => updateSetting('onlineStatus', val)
@@ -127,7 +144,7 @@ export default function ProfileScreen() {
             <View style={styles.separator} />
             
             {renderSettingToggle(
-              <CheckCheck size={18} color={COLORS.secondary} />,
+              <CheckCheck size={18} color={colors.secondary} />,
               'Read Receipts',
               settings.readReceipts,
               (val) => updateSetting('readReceipts', val)
@@ -140,7 +157,7 @@ export default function ProfileScreen() {
           <Text style={styles.sectionHeader}>PRIVACY & SECURITY</Text>
           <View style={[styles.card, SHADOWS.soft]}>
             {renderSettingToggle(
-              <Trash2 size={18} color={COLORS.secondary} />,
+              <Trash2 size={18} color={colors.secondary} />,
               'Vanish Mode',
               settings.vanishMode,
               (val) => updateSetting('vanishMode', val)
@@ -150,18 +167,18 @@ export default function ProfileScreen() {
             
             {/* Hidden Chat PIN Navigation item */}
             <Pressable
-              onPress={() => Alert.alert('Secure Key', 'Your secret chat code is protected. To change it, edit your profile.')}
+              onPress={() => Alert.alert('Secure Key', 'Your secret chat PIN is active. To change it, edit your profile details.')}
               style={styles.navigationRow}
             >
               <View style={styles.settingInfo}>
                 <View style={styles.settingIconBg}>
-                  <CheckCheck size={18} color={COLORS.secondary} />
+                  <CheckCheck size={18} color={colors.secondary} />
                 </View>
                 <Text style={styles.settingTitle}>Hidden Chat PIN</Text>
               </View>
               <View style={styles.navigationRight}>
                 <Text style={styles.badgeLabel}>SECURE</Text>
-                <ChevronRight size={18} color={COLORS.textSecondary} />
+                <ChevronRight size={18} color={colors.textSecondary} />
               </View>
             </Pressable>
           </View>
@@ -172,7 +189,7 @@ export default function ProfileScreen() {
           <Text style={styles.sectionHeader}>APPEARANCE</Text>
           <View style={[styles.card, SHADOWS.soft]}>
             {renderSettingToggle(
-              <Moon size={18} color={COLORS.secondary} />,
+              <Moon size={18} color={colors.secondary} />,
               'Dark Mode',
               settings.darkMode,
               (val) => updateSetting('darkMode', val)
@@ -188,7 +205,7 @@ export default function ProfileScreen() {
             pressed ? styles.logoutButtonPressed : null,
           ]}
         >
-          <LogOut size={18} color={COLORS.primary} style={{ marginRight: 8 }} />
+          <LogOut size={18} color={colors.primary} style={{ marginRight: 8 }} />
           <Text style={styles.logoutButtonText}>LOG OUT</Text>
         </Pressable>
 
@@ -200,10 +217,10 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: typeof LIGHT_COLORS) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   scrollContent: {
     paddingHorizontal: 24,
@@ -216,12 +233,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(232, 214, 223, 0.2)',
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 18,
-    color: COLORS.primary,
+    color: colors.primary,
   },
   profileSection: {
     alignItems: 'center',
@@ -238,21 +255,21 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.white,
+    backgroundColor: LIGHT_COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: 'rgba(220, 191, 201, 0.3)',
+    borderColor: colors.border,
   },
   displayName: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 22,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   username: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 12,
-    color: COLORS.primary,
+    color: colors.primary,
     letterSpacing: 1.5,
     marginTop: 4,
     textTransform: 'uppercase',
@@ -260,7 +277,7 @@ const styles = StyleSheet.create({
   bioText: {
     fontFamily: TYPOGRAPHY.weights.regular,
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
     paddingHorizontal: 24,
@@ -271,15 +288,15 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 10,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     letterSpacing: 1.5,
     marginBottom: 8,
     paddingLeft: 4,
   },
   card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: colors.cardBackground,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: colors.border,
     borderRadius: 20,
     paddingVertical: 4,
   },
@@ -306,11 +323,11 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontFamily: TYPOGRAPHY.weights.medium,
     fontSize: 15,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   separator: {
     height: 1,
-    backgroundColor: 'rgba(232, 214, 223, 0.3)',
+    backgroundColor: colors.border,
     marginHorizontal: 16,
   },
   navigationRow: {
@@ -328,7 +345,7 @@ const styles = StyleSheet.create({
   badgeLabel: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 8,
-    color: COLORS.primary,
+    color: colors.primary,
     backgroundColor: 'rgba(172, 36, 113, 0.08)',
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -344,6 +361,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(172, 36, 113, 0.2)',
     marginTop: 12,
     marginBottom: 20,
+    backgroundColor: colors.cardBackground,
   },
   logoutButtonPressed: {
     backgroundColor: 'rgba(172, 36, 113, 0.05)',
@@ -351,13 +369,13 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 14,
-    color: COLORS.primary,
+    color: colors.primary,
     letterSpacing: 1.5,
   },
   footerText: {
     fontFamily: TYPOGRAPHY.weights.medium,
     fontSize: 10,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     letterSpacing: 1,
     paddingBottom: 20,

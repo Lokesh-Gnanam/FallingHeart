@@ -18,7 +18,6 @@ export default function RegisterScreen() {
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [secretKey, setSecretKey] = useState('');
 
   const [errors, setErrors] = useState<{
     email?: string;
@@ -26,7 +25,6 @@ export default function RegisterScreen() {
     displayName?: string;
     password?: string;
     confirmPassword?: string;
-    secretKey?: string;
   }>({});
 
   const handleSignUp = async () => {
@@ -46,8 +44,6 @@ export default function RegisterScreen() {
     if (!confirmPassword) newErrors.confirmPassword = 'Confirm Password is required';
     else if (confirmPassword !== password) newErrors.confirmPassword = 'Passwords do not match';
     
-    if (!secretKey) newErrors.secretKey = 'Secret Key is mandatory';
-
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -55,15 +51,15 @@ export default function RegisterScreen() {
 
     setErrors({});
 
-    const success = await registerUser(email, username, displayName, password, secretKey);
-    if (success) {
+    const result = await registerUser(email, username, displayName, password);
+    if (result.success) {
       Alert.alert(
         'Identity Encrypted',
         'Your profile has been created and your keys have been generated.',
-        [{ text: 'Enter App', onPress: () => router.replace('/(tabs)/chat') }]
+        [{ text: 'Enter App', onPress: () => router.replace('/(tabs)/home') }]
       );
     } else {
-      Alert.alert('Encryption Error', 'Failed to complete registration. Please try a different email/username.');
+      Alert.alert('Registration Error', result.error || 'Failed to complete registration. Please try a different email/username.');
     }
   };
 
@@ -137,14 +133,6 @@ export default function RegisterScreen() {
               error={errors.confirmPassword}
             />
 
-            <TextField
-              placeholder="Secret Key (Mandatory)"
-              icon={Key}
-              secureTextEntry={true}
-              value={secretKey}
-              onChangeText={setSecretKey}
-              error={errors.secretKey}
-            />
 
             {/* Sign Up Button */}
             <PrimaryButton

@@ -15,12 +15,10 @@ export default function LoginScreen() {
 
   const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [secretKey, setSecretKey] = useState('');
   
   const [errors, setErrors] = useState<{ 
     emailOrUsername?: string; 
     password?: string;
-    secretKey?: string;
   }>({});
 
   // Trigger biometrics automatically if available
@@ -41,7 +39,6 @@ export default function LoginScreen() {
     const newErrors: typeof errors = {};
     if (!emailOrUsername) newErrors.emailOrUsername = 'Email or Username is required';
     if (!password) newErrors.password = 'Password is required';
-    if (!secretKey) newErrors.secretKey = 'Secret Key is required';
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -50,12 +47,12 @@ export default function LoginScreen() {
     
     setErrors({});
     
-    const success = await loginUser(emailOrUsername, password, secretKey);
+    const result = await loginUser(emailOrUsername, password);
     
-    if (success) {
-      router.replace('/(tabs)/chat');
+    if (result.success) {
+      router.replace('/(tabs)/home');
     } else {
-      Alert.alert('Access Denied', 'Authentication failed. Please verify your credentials and Secret Key.');
+      Alert.alert('Access Denied', result.error || 'Authentication failed. Please verify your email/username and password.');
     }
   };
 
@@ -102,14 +99,6 @@ export default function LoginScreen() {
               error={errors.password}
             />
 
-            <TextField
-              placeholder="Secret Key"
-              icon={Key}
-              secureTextEntry={true}
-              value={secretKey}
-              onChangeText={setSecretKey}
-              error={errors.secretKey}
-            />
 
             {/* Forgot Password */}
             <Pressable

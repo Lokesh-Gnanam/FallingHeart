@@ -8,6 +8,7 @@ import Animated, {
   runOnJS,
   cancelAnimation,
   useFrameCallback,
+  SharedValue,
 } from 'react-native-reanimated';
 import { Heart } from 'lucide-react-native';
 import { COLORS } from '../../theme';
@@ -17,7 +18,7 @@ interface FallingHeartProps {
   x: number;
   type: 'normal' | 'golden';
   speed: number;
-  catcherX: Animated.SharedValue<number>;
+  catcherX: SharedValue<number>;
   catcherWidth: number;
   catcherHeight: number;
   catcherY: number;

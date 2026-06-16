@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   Pressable,
   KeyboardAvoidingView,
@@ -11,8 +10,9 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Trash2, Heart, ShieldAlert } from 'lucide-react-native';
+import { ArrowLeft, Heart, ShieldAlert } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import { useChatStore, Message } from '../../src/store/chatStore';
 import { useProfileStore } from '../../src/store/profileStore';
@@ -21,7 +21,7 @@ import { ChatBubble } from '../../src/components/ChatBubble';
 import { MessageInput } from '../../src/components/MessageInput';
 import { ProfileAvatar } from '../../src/components/ProfileAvatar';
 import { OnlineIndicator } from '../../src/components/OnlineIndicator';
-import { COLORS, TYPOGRAPHY, SHADOWS } from '../../src/theme';
+import { useTheme, LIGHT_COLORS, TYPOGRAPHY, SHADOWS } from '../../src/theme';
 
 interface FloatingHeartData {
   id: string;
@@ -34,12 +34,14 @@ export default function ChatRoomScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const conversationId = id as string;
 
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
   const {
     conversations,
     messages,
     sendMessage,
     deleteMessage,
-    markAsRead,
   } = useChatStore();
 
   const { settings, updateSetting } = useProfileStore();
@@ -85,12 +87,7 @@ export default function ChatRoomScreen() {
   };
 
   const handleSendHeart = async () => {
-    // Spawn multiple rising hearts client-side for immediate visual juice
-    for (let i = 0; i < 6; i++) {
-      setTimeout(spawnFloatingHeart, i * 150);
-    }
-    
-    await sendMessage(conversationId, '💖', 'heart', settings.vanishMode);
+    router.push('/game/play');
   };
 
   const handleVanishExpired = async (messageId: string) => {
@@ -100,14 +97,14 @@ export default function ChatRoomScreen() {
   if (!conversation) {
     return (
       <SafeAreaView style={styles.errorContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.errorText}>Establishing secure channel...</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Background Floating Hearts */}
       <View style={styles.heartsBackground} pointerEvents="none">
         {backgroundHearts.map((h) => (
@@ -118,7 +115,7 @@ export default function ChatRoomScreen() {
             transition={{ type: 'timing', duration: 2500 }}
             style={[styles.floatingHeart, { left: `${h.left}%` }]}
           >
-            <Heart size={h.size} color={COLORS.primary} fill={COLORS.primary} style={{ opacity: 0.25 }} />
+            <Heart size={h.size} color={colors.primary} fill={colors.primary} style={{ opacity: 0.25 }} />
           </MotiView>
         ))}
       </View>
@@ -127,7 +124,7 @@ export default function ChatRoomScreen() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <ArrowLeft size={24} color={COLORS.primary} />
+            <ArrowLeft size={24} color={colors.primary} />
           </Pressable>
           
           <ProfileAvatar
@@ -161,7 +158,7 @@ export default function ChatRoomScreen() {
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         style={styles.keyboardView}
       >
         {/* Vanish Mode Banner */}
@@ -171,7 +168,7 @@ export default function ChatRoomScreen() {
             animate={{ opacity: 1, translateY: 0 }}
             style={styles.vanishBanner}
           >
-            <ShieldAlert size={14} color={COLORS.primary} style={{ marginRight: 6 }} />
+            <ShieldAlert size={14} color={colors.primary} style={{ marginRight: 6 }} />
             <Text style={styles.vanishBannerText}>
               Vanish Mode active. Seen messages will disappear after 10s.
             </Text>
@@ -209,10 +206,10 @@ export default function ChatRoomScreen() {
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
-const styles = StyleSheet.create({
+const getStyles = (colors: typeof LIGHT_COLORS) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   keyboardView: {
     flex: 1,
@@ -229,12 +226,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   errorText: {
     fontFamily: TYPOGRAPHY.weights.medium,
     fontSize: 14,
-    color: COLORS.primary,
+    color: colors.primary,
     marginTop: 12,
   },
   header: {
@@ -244,8 +241,8 @@ const styles = StyleSheet.create({
     height: 64,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(232, 214, 223, 0.4)',
-    backgroundColor: 'rgba(250, 248, 255, 0.8)',
+    borderBottomColor: colors.border,
+    backgroundColor: colors.cardBackground === '#FFFFFF' ? 'rgba(250, 248, 255, 0.8)' : 'rgba(31, 22, 28, 0.9)',
     zIndex: 10,
   },
   headerLeft: {
@@ -265,7 +262,7 @@ const styles = StyleSheet.create({
   partnerName: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 15,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   vanishToggle: {
     paddingHorizontal: 10,
@@ -274,9 +271,9 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   vanishToggleActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-    shadowColor: COLORS.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
@@ -284,16 +281,16 @@ const styles = StyleSheet.create({
   },
   vanishToggleInactive: {
     backgroundColor: 'transparent',
-    borderColor: 'rgba(172, 36, 113, 0.2)',
+    borderColor: colors.border,
   },
   vanishToggleText: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 9,
     letterSpacing: 1,
-    color: COLORS.primary,
+    color: colors.primary,
   },
   vanishTextActive: {
-    color: COLORS.white,
+    color: LIGHT_COLORS.white,
   },
   vanishBanner: {
     flexDirection: 'row',
@@ -303,12 +300,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(172, 36, 113, 0.1)',
+    borderBottomColor: colors.border,
   },
   vanishBannerText: {
     fontFamily: TYPOGRAPHY.weights.medium,
     fontSize: 10,
-    color: COLORS.primary,
+    color: colors.primary,
   },
   messagesList: {
     flexGrow: 1,
@@ -326,13 +323,13 @@ const styles = StyleSheet.create({
   emptyText: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 13,
-    color: COLORS.primary,
+    color: colors.primary,
     opacity: 0.8,
   },
   emptySubtitle: {
     fontFamily: TYPOGRAPHY.weights.regular,
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: 4,
   },
 });

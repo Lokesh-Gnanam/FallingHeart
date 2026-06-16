@@ -10,8 +10,9 @@ import {
 } from '@expo-google-fonts/poppins';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuthStore } from '../src/store/authStore';
+import { useProfileStore } from '../src/store/profileStore';
 import { startPresenceTracker, stopPresenceTracker } from '../src/services/presence';
-import { COLORS } from '../src/theme';
+import { useTheme } from '../src/theme';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -24,15 +25,17 @@ export default function RootLayout() {
   });
 
   const { initialize, isAuthenticated } = useAuthStore();
+  const { colors } = useTheme();
 
   useEffect(() => {
     initialize();
   }, [initialize]);
 
-  // Start presence tracking when authenticated
+  // Start presence tracking and load settings when authenticated
   useEffect(() => {
     if (isAuthenticated) {
       startPresenceTracker();
+      useProfileStore.getState().fetchSettings(); // Auto load user settings/dark mode on auth
     } else {
       stopPresenceTracker();
     }
@@ -56,7 +59,7 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: COLORS.background },
+          contentStyle: { backgroundColor: colors.background },
           animation: 'fade',
           animationDuration: 300,
         }}
@@ -73,4 +76,3 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
-

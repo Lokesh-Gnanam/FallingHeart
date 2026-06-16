@@ -3,11 +3,14 @@ import { Tabs } from 'expo-router';
 import { View, StyleSheet, Pressable, Platform } from 'react-native';
 import { Heart, MessageSquare, User } from 'lucide-react-native';
 import { usePresence } from '../../src/hooks/usePresence';
-import { COLORS, SHADOWS } from '../../src/theme';
+import { useTheme, LIGHT_COLORS, SHADOWS } from '../../src/theme';
 
 export default function TabLayout() {
   // Start tracking and subscribing to global user presence in real-time
   usePresence();
+  
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
 
   return (
     <Tabs
@@ -18,11 +21,17 @@ export default function TabLayout() {
         },
       }}
       tabBar={({ state, navigation }) => {
+        // Filter routes to ONLY render the three designated main tabs
+        const visibleRoutes = state.routes.filter((route) =>
+          ['home', 'chat/index', 'profile/index'].includes(route.name)
+        );
+
         return (
           <View style={styles.floatingTabBarContainer} pointerEvents="box-none">
             <View style={styles.floatingTabBar}>
-              {state.routes.map((route, index) => {
-                const isFocused = state.index === index;
+              {visibleRoutes.map((route) => {
+                // Determine focus status by comparing key with the active route in state
+                const isFocused = state.routes[state.index].key === route.key;
                 
                 const onPress = () => {
                   const event = navigation.emit({
@@ -37,15 +46,15 @@ export default function TabLayout() {
                 };
 
                 const renderIcon = () => {
-                  const color = isFocused ? COLORS.white : COLORS.textSecondary;
+                  const color = isFocused ? LIGHT_COLORS.white : colors.textSecondary;
                   const size = 24;
 
-                  if (route.name === 'index') {
-                    return <Heart size={size} color={color} fill={isFocused ? COLORS.white : 'transparent'} />;
+                  if (route.name === 'home') {
+                    return <Heart size={size} color={color} fill={isFocused ? LIGHT_COLORS.white : 'transparent'} />;
                   } else if (route.name === 'chat/index') {
-                    return <MessageSquare size={size} color={color} fill={isFocused ? COLORS.white : 'transparent'} />;
+                    return <MessageSquare size={size} color={color} fill={isFocused ? LIGHT_COLORS.white : 'transparent'} />;
                   } else if (route.name === 'profile/index') {
-                    return <User size={size} color={color} fill={isFocused ? COLORS.white : 'transparent'} />;
+                    return <User size={size} color={color} fill={isFocused ? LIGHT_COLORS.white : 'transparent'} />;
                   }
                   return null;
                 };
@@ -68,14 +77,14 @@ export default function TabLayout() {
         );
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Play' }} />
+      <Tabs.Screen name="home" options={{ title: 'Home' }} />
       <Tabs.Screen name="chat/index" options={{ title: 'Chats' }} />
       <Tabs.Screen name="profile/index" options={{ title: 'Profile' }} />
     </Tabs>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: typeof LIGHT_COLORS) => StyleSheet.create({
   floatingTabBarContainer: {
     position: 'absolute',
     bottom: Platform.OS === 'ios' ? 34 : 24,
@@ -91,10 +100,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     width: '100%',
     height: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.72)',
+    backgroundColor: colors.cardBackground === '#FFFFFF' ? 'rgba(255, 255, 255, 0.72)' : 'rgba(31, 22, 28, 0.82)',
     borderRadius: 24,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'space-around',
     paddingHorizontal: 16,
@@ -108,8 +117,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabItemActive: {
-    backgroundColor: COLORS.primary,
-    shadowColor: COLORS.primary,
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 10,

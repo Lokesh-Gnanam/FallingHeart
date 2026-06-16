@@ -13,18 +13,22 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Camera, Shield, MessageSquare } from 'lucide-react-native';
+import { ArrowLeft, Camera } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { MotiView } from 'moti';
 import { useAuthStore } from '../../src/store/authStore';
 import { useProfileStore } from '../../src/store/profileStore';
 import { uploadAvatar } from '../../src/services/chat';
 import { ProfileAvatar } from '../../src/components/ProfileAvatar';
-import { COLORS, TYPOGRAPHY, SHADOWS } from '../../src/theme';
+import { useTheme, LIGHT_COLORS, TYPOGRAPHY, SHADOWS } from '../../src/theme';
 
 export default function EditProfileScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
   const currentUser = useAuthStore((state) => state.user);
+  const updateSecretKey = useAuthStore((state) => state.updateSecretKey);
   
   const { updateProfile, loading } = useProfileStore();
 
@@ -32,6 +36,7 @@ export default function EditProfileScreen() {
   const [username, setUsername] = useState(currentUser?.username || '');
   const [bio, setBio] = useState(currentUser?.bio || '');
   const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatarUrl || '');
+  const [pin, setPin] = useState('');
   const [uploading, setUploading] = useState(false);
 
   const handlePickImage = async () => {
@@ -77,6 +82,11 @@ export default function EditProfileScreen() {
       return;
     }
 
+    if (pin.trim() && pin.trim().length < 4) {
+      Alert.alert('Validation Error', 'Hidden Chat PIN must be at least 4 characters.');
+      return;
+    }
+
     const success = await updateProfile(
       displayName.trim(),
       username.trim(),
@@ -85,6 +95,13 @@ export default function EditProfileScreen() {
     );
 
     if (success) {
+      if (pin.trim()) {
+        const pinSuccess = await updateSecretKey(pin.trim());
+        if (!pinSuccess) {
+          Alert.alert('Warning', 'Profile updated, but failed to update Hidden Chat PIN.');
+          return;
+        }
+      }
       Alert.alert('Identity Updated', 'Your profile details have been saved.', [
         { text: 'OK', onPress: () => router.back() },
       ]);
@@ -97,7 +114,7 @@ export default function EditProfileScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={24} color={COLORS.primary} />
+          <ArrowLeft size={24} color={colors.primary} />
         </Pressable>
         <Text style={styles.headerTitle}>Edit Profile</Text>
         <View style={styles.spacer} />
@@ -122,9 +139,9 @@ export default function EditProfileScreen() {
                 style={[styles.cameraButton, SHADOWS.soft]}
               >
                 {uploading ? (
-                  <ActivityIndicator size="small" color={COLORS.primary} />
+                  <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
-                  <Camera size={18} color={COLORS.white} />
+                  <Camera size={18} color={LIGHT_COLORS.white} />
                 )}
               </Pressable>
             </View>
@@ -144,7 +161,7 @@ export default function EditProfileScreen() {
                 value={displayName}
                 onChangeText={setDisplayName}
                 placeholder="Display Name"
-                placeholderTextColor={COLORS.textSecondary}
+                placeholderTextColor={colors.textSecondary}
               />
             </View>
 
@@ -157,7 +174,7 @@ export default function EditProfileScreen() {
                   value={username}
                   onChangeText={setUsername}
                   placeholder="username"
-                  placeholderTextColor={COLORS.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                   autoCapitalize="none"
                 />
               </View>
@@ -170,10 +187,22 @@ export default function EditProfileScreen() {
                 value={bio}
                 onChangeText={setBio}
                 placeholder="Write a secret bio..."
-                placeholderTextColor={COLORS.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 multiline={true}
                 numberOfLines={4}
                 textAlignVertical="top"
+              />
+            </View>
+
+            <View style={[styles.inputGroup, SHADOWS.soft]}>
+              <Text style={styles.inputLabel}>Hidden Chat PIN (Password)</Text>
+              <TextInput
+                style={styles.input}
+                value={pin}
+                onChangeText={setPin}
+                placeholder="Enter new PIN to change"
+                placeholderTextColor={colors.textSecondary}
+                secureTextEntry={true}
               />
             </View>
           </MotiView>
@@ -189,7 +218,7 @@ export default function EditProfileScreen() {
             ]}
           >
             {loading ? (
-              <ActivityIndicator size="small" color={COLORS.white} />
+              <ActivityIndicator size="small" color={LIGHT_COLORS.white} />
             ) : (
               <Text style={styles.saveButtonText}>Save Changes</Text>
             )}
@@ -200,10 +229,10 @@ export default function EditProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: typeof LIGHT_COLORS) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   keyboardView: {
     flex: 1,
@@ -215,7 +244,7 @@ const styles = StyleSheet.create({
     height: 64,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(232, 214, 223, 0.4)',
+    borderBottomColor: colors.border,
   },
   backButton: {
     padding: 6,
@@ -223,7 +252,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 18,
-    color: COLORS.primary,
+    color: colors.primary,
   },
   spacer: {
     width: 36,
@@ -248,16 +277,16 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: COLORS.white,
+    borderColor: colors.white,
   },
   avatarLabel: {
     fontFamily: TYPOGRAPHY.weights.medium,
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginTop: 4,
   },
   formContainer: {
@@ -265,9 +294,9 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   inputGroup: {
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: colors.cardBackground,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: colors.border,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -275,14 +304,14 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 10,
-    color: COLORS.primary,
+    color: colors.primary,
     letterSpacing: 1,
     marginBottom: 4,
   },
   input: {
     fontFamily: TYPOGRAPHY.weights.medium,
     fontSize: 15,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     minHeight: 40,
     paddingVertical: 0,
   },
@@ -293,7 +322,7 @@ const styles = StyleSheet.create({
   atSymbol: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 15,
-    color: COLORS.primary,
+    color: colors.primary,
     marginRight: 4,
   },
   textArea: {
@@ -303,10 +332,10 @@ const styles = StyleSheet.create({
   saveButton: {
     height: 56,
     borderRadius: 28,
-    backgroundColor: COLORS.primary,
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: COLORS.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -321,7 +350,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 16,
-    color: COLORS.white,
+    color: LIGHT_COLORS.white,
     letterSpacing: 1,
   },
 });

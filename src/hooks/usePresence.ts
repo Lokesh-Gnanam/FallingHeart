@@ -29,9 +29,10 @@ export const usePresence = () => {
 
     fetchInitialPresence();
 
-    // Subscribe to database updates on profiles table
+    // Subscribe to database updates on profiles table with a unique channel name to prevent hot reload collisions
+    const channelId = Math.random().toString(36).substring(7);
     const channel = supabase
-      .channel('global-presence-db-changes')
+      .channel(`global-presence-changes-${channelId}`)
       .on(
         'postgres_changes',
         {

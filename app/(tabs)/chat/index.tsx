@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   Pressable,
   TextInput,
@@ -12,17 +11,21 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Search, Lock, Unlock, ChevronRight, Plus, MessageSquare } from 'lucide-react-native';
-import { MotiView, AnimatePresence } from 'moti';
+import { MotiView } from 'moti';
 import { useChatStore, Conversation, ChatPartner } from '../../../src/store/chatStore';
 import { useAuthStore } from '../../../src/store/authStore';
 import { ProfileAvatar } from '../../../src/components/ProfileAvatar';
 import { OnlineIndicator } from '../../../src/components/OnlineIndicator';
-import { COLORS, TYPOGRAPHY, SHADOWS } from '../../../src/theme';
+import { useTheme, LIGHT_COLORS, TYPOGRAPHY, SHADOWS } from '../../../src/theme';
 
 export default function ChatListScreen() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors);
+
   const currentUser = useAuthStore((state) => state.user);
   
   const {
@@ -63,7 +66,7 @@ export default function ChatListScreen() {
       setPinModalVisible(false);
       setActiveTab('hidden');
     } else {
-      Alert.alert('Access Denied', 'Invalid Secret Key.');
+      Alert.alert('Access Denied', 'Invalid Password.');
     }
   };
 
@@ -161,7 +164,7 @@ export default function ChatListScreen() {
         <Text style={styles.searchItemName}>{item.displayName || item.username}</Text>
         <Text style={styles.searchItemUsername}>@{item.username}</Text>
       </View>
-      <Plus size={20} color={COLORS.primary} />
+      <Plus size={20} color={colors.primary} />
     </Pressable>
   );
 
@@ -186,7 +189,7 @@ export default function ChatListScreen() {
             }}
             style={styles.lockButton}
           >
-            <Lock size={18} color={COLORS.primary} />
+            <Lock size={18} color={colors.primary} />
             <Text style={styles.lockButtonText}>LOCK</Text>
           </Pressable>
         )}
@@ -195,13 +198,13 @@ export default function ChatListScreen() {
       {/* Search Input */}
       <View style={styles.searchSection}>
         <View style={styles.searchContainer}>
-          <Search size={20} color={COLORS.textSecondary} style={styles.searchIcon} />
+          <Search size={20} color={colors.textSecondary} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search username or secret code..."
-            placeholderTextColor={COLORS.textSecondary}
+            placeholder="Search username..."
+            placeholderTextColor={colors.textSecondary}
             autoCapitalize="none"
           />
         </View>
@@ -237,7 +240,7 @@ export default function ChatListScreen() {
             >
               <View style={styles.hiddenCardLeft}>
                 <View style={styles.lockIconBg}>
-                  <Lock size={18} color={COLORS.primary} />
+                  <Lock size={18} color={colors.primary} />
                 </View>
                 <Text style={styles.hiddenCardTitle}>Hidden Chats</Text>
               </View>
@@ -245,14 +248,14 @@ export default function ChatListScreen() {
                 {isHiddenChatsUnlocked && (
                   <Text style={styles.unlockedLabel}>UNLOCKED</Text>
                 )}
-                <ChevronRight size={18} color={COLORS.textSecondary} />
+                <ChevronRight size={18} color={colors.textSecondary} />
               </View>
             </Pressable>
           )}
 
           {activeTab === 'hidden' && (
             <View style={styles.hiddenHeader}>
-              <Unlock size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
+              <Unlock size={16} color={colors.primary} style={{ marginRight: 6 }} />
               <Text style={styles.hiddenHeaderTitle}>Hidden Whispers</Text>
             </View>
           )}
@@ -263,7 +266,7 @@ export default function ChatListScreen() {
           </Text>
           
           {loading ? (
-            <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} />
+            <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
           ) : (
             <FlatList
               data={visibleConversations}
@@ -272,7 +275,7 @@ export default function ChatListScreen() {
               contentContainerStyle={styles.chatListContent}
               ListEmptyComponent={
                 <View style={styles.emptyContainer}>
-                  <MessageSquare size={40} color={COLORS.textSecondary} style={{ opacity: 0.5, marginBottom: 8 }} />
+                  <MessageSquare size={40} color={colors.textSecondary} style={{ opacity: 0.5, marginBottom: 8 }} />
                   <Text style={styles.emptyText}>
                     {activeTab === 'hidden'
                       ? 'No hidden chats locked.'
@@ -290,7 +293,7 @@ export default function ChatListScreen() {
         onPress={() => Alert.alert('Discreet Invite', 'Invite friends by searching their exact username in the bar above.')}
         style={[styles.fab, SHADOWS.glow]}
       >
-        <Plus size={24} color={COLORS.white} />
+        <Plus size={24} color={LIGHT_COLORS.white} />
       </Pressable>
 
       {/* Passcode Entry Modal */}
@@ -306,15 +309,15 @@ export default function ChatListScreen() {
             animate={{ opacity: 1, scale: 1 }}
             style={styles.modalCard}
           >
-            <Text style={styles.modalTitle}>Enter Secret Key</Text>
-            <Text style={styles.modalSubtitle}>Verify credentials to unlock hidden enclave</Text>
+            <Text style={styles.modalTitle}>Enter Password</Text>
+            <Text style={styles.modalSubtitle}>Verify credentials to unlock hidden chats</Text>
             
             <TextInput
               style={styles.pinInput}
               value={pinInput}
               onChangeText={pinInput => setPinInput(pinInput)}
-              placeholder="Secret Key"
-              placeholderTextColor={COLORS.textSecondary}
+              placeholder="Password"
+              placeholderTextColor={colors.textSecondary}
               secureTextEntry={true}
               autoFocus={true}
               autoCapitalize="none"
@@ -346,10 +349,10 @@ export default function ChatListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: typeof LIGHT_COLORS) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   appBar: {
     flexDirection: 'row',
@@ -358,7 +361,7 @@ const styles = StyleSheet.create({
     height: 64,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(232, 214, 223, 0.4)',
+    borderBottomColor: colors.border,
   },
   appBarLeft: {
     flexDirection: 'row',
@@ -368,7 +371,7 @@ const styles = StyleSheet.create({
   appBarTitle: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 20,
-    color: COLORS.primary,
+    color: colors.primary,
   },
   lockButton: {
     flexDirection: 'row',
@@ -382,7 +385,7 @@ const styles = StyleSheet.create({
   lockButtonText: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 10,
-    color: COLORS.primary,
+    color: colors.primary,
   },
   searchSection: {
     paddingHorizontal: 16,
@@ -393,9 +396,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: colors.cardBackground === '#FFFFFF' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(31, 22, 28, 0.6)',
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: colors.border,
     paddingHorizontal: 16,
   },
   searchIcon: {
@@ -406,7 +409,7 @@ const styles = StyleSheet.create({
     height: '100%',
     fontFamily: TYPOGRAPHY.weights.regular,
     fontSize: 15,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   listContainer: {
     flex: 1,
@@ -415,7 +418,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 11,
-    color: COLORS.primary,
+    color: colors.primary,
     letterSpacing: 1.5,
     marginTop: 16,
     marginBottom: 8,
@@ -424,13 +427,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: colors.cardBackground,
     height: 56,
     borderRadius: 16,
     paddingHorizontal: 16,
     marginVertical: 8,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: colors.border,
   },
   hiddenCardLeft: {
     flexDirection: 'row',
@@ -448,7 +451,7 @@ const styles = StyleSheet.create({
   hiddenCardTitle: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 14,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   hiddenCardRight: {
     flexDirection: 'row',
@@ -458,7 +461,7 @@ const styles = StyleSheet.create({
   unlockedLabel: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 9,
-    color: COLORS.primary,
+    color: colors.primary,
     backgroundColor: 'rgba(172, 36, 113, 0.1)',
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -476,7 +479,7 @@ const styles = StyleSheet.create({
   hiddenHeaderTitle: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 13,
-    color: COLORS.primary,
+    color: colors.primary,
   },
   chatListContent: {
     paddingBottom: 100, // leave space for FAB and floating tab bar
@@ -487,15 +490,15 @@ const styles = StyleSheet.create({
   chatCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    backgroundColor: colors.cardBackground === '#FFFFFF' ? 'rgba(255, 255, 255, 0.4)' : 'rgba(31, 22, 28, 0.4)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: colors.border,
     borderRadius: 16,
     padding: 12,
     gap: 12,
   },
   chatCardPressed: {
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: colors.cardBackground === '#FFFFFF' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(31, 22, 28, 0.8)',
   },
   chatCardContent: {
     flex: 1,
@@ -509,14 +512,14 @@ const styles = StyleSheet.create({
   partnerName: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 15,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     flex: 1,
     marginRight: 8,
   },
   timestampText: {
     fontFamily: TYPOGRAPHY.weights.regular,
     fontSize: 11,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   chatCardBody: {
     flexDirection: 'row',
@@ -526,15 +529,15 @@ const styles = StyleSheet.create({
   lastMessageText: {
     fontFamily: TYPOGRAPHY.weights.regular,
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     flex: 1,
   },
   lastMessageTextUnread: {
     fontFamily: TYPOGRAPHY.weights.medium,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   unreadBadge: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: colors.secondary,
     width: 18,
     height: 18,
     borderRadius: 9,
@@ -545,7 +548,7 @@ const styles = StyleSheet.create({
   unreadBadgeText: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 10,
-    color: COLORS.white,
+    color: LIGHT_COLORS.white,
   },
   searchResultsContainer: {
     flex: 1,
@@ -559,7 +562,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(232, 214, 223, 0.2)',
+    borderBottomColor: colors.border,
   },
   searchItemInfo: {
     flex: 1,
@@ -568,12 +571,12 @@ const styles = StyleSheet.create({
   searchItemName: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 14,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   searchItemUsername: {
     fontFamily: TYPOGRAPHY.weights.regular,
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -583,7 +586,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontFamily: TYPOGRAPHY.weights.medium,
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   loader: {
@@ -596,7 +599,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 90,
@@ -610,24 +613,24 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: '100%',
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.cardBackground,
     borderRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     alignItems: 'center',
     ...SHADOWS.soft,
   },
   modalTitle: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 18,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     marginBottom: 6,
   },
   modalSubtitle: {
     fontFamily: TYPOGRAPHY.weights.medium,
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -636,13 +639,14 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     paddingHorizontal: 16,
     fontFamily: TYPOGRAPHY.weights.regular,
     fontSize: 16,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     marginBottom: 20,
     textAlign: 'center',
+    backgroundColor: colors.cardBackground,
   },
   modalActions: {
     flexDirection: 'row',
@@ -654,26 +658,26 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
   cancelButtonText: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   confirmButton: {
     flex: 1,
     height: 48,
     borderRadius: 24,
-    backgroundColor: COLORS.primary,
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   confirmButtonText: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 14,
-    color: COLORS.white,
+    color: LIGHT_COLORS.white,
   },
 });

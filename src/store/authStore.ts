@@ -4,6 +4,45 @@ import { Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { hashSecretKey, checkBiometricsSupport, requestBiometricUnlock } from '../services/auth';
 
+const SecureStoreAdapter = {
+  getItemAsync: async (key: string): Promise<string | null> => {
+    if (Platform.OS === 'web') {
+      try {
+        return localStorage.getItem(key);
+      } catch {
+        return null;
+      }
+    }
+    try {
+      return await SecureStore.getItemAsync(key);
+    } catch {
+      return null;
+    }
+  },
+  setItemAsync: async (key: string, value: string): Promise<void> => {
+    if (Platform.OS === 'web') {
+      try {
+        localStorage.setItem(key, value);
+      } catch {}
+      return;
+    }
+    try {
+      await SecureStore.setItemAsync(key, value);
+    } catch {}
+  },
+  deleteItemAsync: async (key: string): Promise<void> => {
+    if (Platform.OS === 'web') {
+      try {
+        localStorage.removeItem(key);
+      } catch {}
+      return;
+    }
+    try {
+      await SecureStore.deleteItemAsync(key);
+    } catch {}
+  }
+};
+
 interface User {
   id: string;
   email: string;
@@ -27,12 +66,12 @@ interface AuthState {
     email: string,
     username: string,
     displayName: string,
-    password: string,
-    secretKeyInput: string
-  ) => Promise<boolean>;
-  loginUser: (emailOrUsername: string, passwordInput: string, secretKeyInput: string) => Promise<boolean>;
+    password: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  loginUser: (emailOrUsername: string, passwordInput: string) => Promise<{ success: boolean; error?: string }>;
   biometricUnlock: () => Promise<boolean>;
   logout: () => Promise<void>;
+  updateSecretKey: (newPin: string) => Promise<boolean>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -43,10 +82,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isBiometricsAvailable: false,
   loading: false,
 
+  updateSecretKey: async (newPin: string) => {
+    const hashedKey = hashSecretKey(newPin);
+    const user = get().user;
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ secret_key_hash: hashedKey })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      await SecureStoreAdapter.setItemAsync('secret_key', newPin);
+      set({ secretKey: newPin });
+      return true;
+    } catch (e) {
+      console.error('Error updating secret key:', e);
+      return false;
+    }
+  },
+
   initialize: async () => {
     try {
-      const onboardingCompleted = await SecureStore.getItemAsync('onboarding_completed');
-      const savedKey = await SecureStore.getItemAsync('secret_key');
+      const onboardingCompleted = await SecureStoreAdapter.getItemAsync('onboarding_completed');
+      const savedKey = await SecureStoreAdapter.getItemAsync('secret_key');
       const biometricsSupported = await checkBiometricsSupport();
 
       // Check if session exists in Supabase
@@ -87,14 +148,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   setOnboarded: async (val: boolean) => {
-    await SecureStore.setItemAsync('onboarding_completed', val ? 'true' : 'false');
+    await SecureStoreAdapter.setItemAsync('onboarding_completed', val ? 'true' : 'false');
     set({ isOnboarded: val });
   },
 
-  registerUser: async (email, username, displayName, password, secretKeyInput) => {
+  registerUser: async (email, username, displayName, password) => {
     set({ loading: true });
     try {
-      const hashedKey = hashSecretKey(secretKeyInput);
+      // Check if username is already taken
+      const { data: existingUser, error: checkError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', username.toLowerCase().trim())
+        .maybeSingle();
+
+      if (existingUser) {
+        set({ loading: false });
+        return { success: false, error: 'Username is already taken' };
+      }
+
+      const hashedKey = hashSecretKey(password);
       
       // Sign up in Supabase auth
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -132,8 +205,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         console.warn('Profile sync warning:', profileError.message);
       }
 
-      // Save plain secret key locally
-      await SecureStore.setItemAsync('secret_key', secretKeyInput);
+      // Save plain secret key locally (using password)
+      await SecureStoreAdapter.setItemAsync('secret_key', password);
 
       const userProfile: User = {
         id: userId,
@@ -144,19 +217,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       set({
         user: userProfile,
-        secretKey: secretKeyInput,
+        secretKey: password,
         isAuthenticated: true,
         loading: false,
       });
-      return true;
-    } catch (e) {
+      return { success: true };
+    } catch (e: any) {
       console.error('Error registering user:', e);
       set({ loading: false });
-      return false;
+      return { success: false, error: e.message || 'Registration failed' };
     }
   },
 
-  loginUser: async (emailOrUsername, passwordInput, secretKeyInput) => {
+  loginUser: async (emailOrUsername, passwordInput) => {
     set({ loading: true });
     try {
       let resolvedEmail = emailOrUsername.trim();
@@ -173,7 +246,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           resolvedEmail = profile.email;
         } else {
           set({ loading: false });
-          return false;
+          return { success: false, error: 'User profile not found' };
         }
       }
 
@@ -189,10 +262,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const userId = authData.user.id;
 
-      // Fetch user profile settings and secret key hash
+      // Fetch user profile settings
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, email, username, display_name, avatar_url, bio, secret_key_hash')
+        .select('id, email, username, display_name, avatar_url, bio')
         .eq('id', userId)
         .single();
 
@@ -200,16 +273,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw profileError || new Error('Profile not found');
       }
 
-      // Verify the Secret Key matches
-      const hashedInputKey = hashSecretKey(secretKeyInput);
-      if (profile.secret_key_hash !== hashedInputKey) {
-        // Disconnect session since secret key did not match
-        await supabase.auth.signOut();
-        throw new Error('Secret key incorrect');
-      }
-
-      // Store secret key locally
-      await SecureStore.setItemAsync('secret_key', secretKeyInput);
+      // Store the password locally as the secret key to unlock hidden chats and biometrics
+      await SecureStoreAdapter.setItemAsync('secret_key', passwordInput);
 
       // Set user online
       await supabase.from('profiles').update({ online: true, last_seen: new Date().toISOString() }).eq('id', userId);
@@ -223,15 +288,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           avatarUrl: profile.avatar_url,
           bio: profile.bio,
         },
-        secretKey: secretKeyInput,
+        secretKey: passwordInput,
         isAuthenticated: true,
         loading: false,
       });
-      return true;
-    } catch (e) {
+      return { success: true };
+    } catch (e: any) {
       console.error('Error logging in user:', e);
       set({ loading: false });
-      return false;
+      return { success: false, error: e.message || 'Authentication failed' };
     }
   },
 
@@ -242,7 +307,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // Verify session exists and we have a local key saved
       const { data: { session } } = await supabase.auth.getSession();
-      const savedKey = await SecureStore.getItemAsync('secret_key');
+      const savedKey = await SecureStoreAdapter.getItemAsync('secret_key');
 
       if (session?.user && savedKey) {
         // Fetch latest profile
@@ -290,7 +355,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       
       await supabase.auth.signOut();
-      await SecureStore.deleteItemAsync('secret_key');
+      await SecureStoreAdapter.deleteItemAsync('secret_key');
 
       set({
         isAuthenticated: false,

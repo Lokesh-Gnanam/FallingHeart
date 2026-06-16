@@ -1,12 +1,12 @@
 import React from 'react';
 import { StyleSheet, View, Dimensions } from 'react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, runOnJS, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, runOnJS, useSharedValue, withSpring, SharedValue } from 'react-native-reanimated';
 import { Heart, Plus } from 'lucide-react-native';
 import { COLORS, SHADOWS } from '../../theme';
 
 interface HeartBasketProps {
-  catcherX: Animated.SharedValue<number>;
+  catcherX: SharedValue<number>;
   catcherWidth: number;
   catcherHeight: number;
   yPosition: number;

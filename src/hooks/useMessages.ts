@@ -20,8 +20,9 @@ export const useMessages = (conversationId: string) => {
     markAsRead(conversationId);
 
     // Subscribe to realtime database operations on the messages table
+    const hookId = Math.random().toString(36).substring(7);
     const channel = supabase
-      .channel(`chat-messages-room-${conversationId}`)
+      .channel(`chat-messages-room-${conversationId}-${hookId}`)
       .on(
         'postgres_changes',
         {

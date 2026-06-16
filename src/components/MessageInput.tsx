@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, TextInput, Pressable, StyleSheet } from 'react-native';
 import { Heart, Smile, Send } from 'lucide-react-native';
 import { MotiView } from 'moti';
-import { COLORS, TYPOGRAPHY } from '../theme';
+import { useTheme, LIGHT_COLORS, TYPOGRAPHY } from '../theme';
 
 interface MessageInputProps {
   onSend: (text: string) => void;
@@ -11,6 +11,8 @@ interface MessageInputProps {
 
 export const MessageInput: React.FC<MessageInputProps> = ({ onSend, onSendHeart }) => {
   const [text, setText] = useState('');
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
 
   const handleSend = () => {
     if (text.trim().length === 0) return;
@@ -37,8 +39,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSend, onSendHeart 
           >
             <Heart 
               size={22} 
-              color={COLORS.primary} 
-              fill={isTyping ? COLORS.primary : 'transparent'} 
+              color={colors.primary} 
+              fill={isTyping ? colors.primary : 'transparent'} 
               strokeWidth={2}
             />
           </MotiView>
@@ -51,12 +53,12 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSend, onSendHeart 
             value={text}
             onChangeText={setText}
             placeholder="Type a Secret"
-            placeholderTextColor="rgba(122, 107, 116, 0.6)"
+            placeholderTextColor={colors.textSecondary}
             onSubmitEditing={handleSend}
             autoCapitalize="none"
           />
           <Pressable style={styles.emojiButton}>
-            <Smile size={20} color={COLORS.textSecondary} />
+            <Smile size={20} color={colors.textSecondary} />
           </Pressable>
         </View>
 
@@ -66,14 +68,14 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSend, onSendHeart 
           disabled={!isTyping}
           style={[styles.sendButton, isTyping ? styles.sendButtonActive : styles.sendButtonDisabled]}
         >
-          <Send size={18} color={COLORS.white} />
+          <Send size={18} color={LIGHT_COLORS.white} />
         </Pressable>
       </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: typeof LIGHT_COLORS) => StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     paddingBottom: 24,
@@ -84,14 +86,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: 64,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: colors.cardBackground === '#FFFFFF' ? 'rgba(255, 255, 255, 0.65)' : 'rgba(31, 22, 28, 0.82)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: colors.border,
     paddingHorizontal: 12,
     gap: 8,
-    shadowColor: 'rgba(184, 0, 73, 0.08)',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 1,
+    shadowOpacity: 0.08,
     shadowRadius: 24,
     elevation: 4,
   },
@@ -107,9 +109,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(244, 243, 251, 0.5)',
+    backgroundColor: colors.cardBackground === '#FFFFFF' ? 'rgba(244, 243, 251, 0.5)' : 'rgba(20, 15, 18, 0.5)',
     borderWidth: 1,
-    borderColor: 'rgba(220, 191, 201, 0.2)',
+    borderColor: colors.border,
     paddingHorizontal: 14,
   },
   input: {
@@ -117,7 +119,7 @@ const styles = StyleSheet.create({
     height: '100%',
     fontFamily: TYPOGRAPHY.weights.regular,
     fontSize: 15,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     paddingVertical: 0,
   },
   emojiButton: {
@@ -135,8 +137,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   sendButtonActive: {
-    backgroundColor: COLORS.primary,
-    shadowColor: COLORS.primary,
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
   },
   sendButtonDisabled: {
     backgroundColor: 'rgba(172, 36, 113, 0.3)',

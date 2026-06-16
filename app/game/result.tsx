@@ -11,17 +11,16 @@ import {
 import { useRouter } from 'expo-router';
 import { MotiView } from 'moti';
 import Svg, { Path } from 'react-native-svg';
-import { Share2, MessageCircle, Play, Home, Trophy, Heart, Zap, Clock } from 'lucide-react-native';
+import { Share2, MessageCircle, Home, Trophy, Heart, Zap, Clock } from 'lucide-react-native';
 
-import { COLORS, TYPOGRAPHY, SHADOWS } from '../../src/theme';
+import { useTheme, LIGHT_COLORS, TYPOGRAPHY, SHADOWS } from '../../src/theme';
 import { useGameStore } from '../../src/game/store/gameStore';
 import { PrimaryButton } from '../../src/components/PrimaryButton';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Custom broken heart SVG to match reference
-const BrokenHeartSVG = ({ size = 100, color = COLORS.primary }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill={color} style={styles.heartPulse}>
+const BrokenHeartSVG = ({ size = 100, color = LIGHT_COLORS.primary }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
     <Path
       d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 17.5 3 20.58 3 23 5.42 23 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
       fillOpacity={0.15}
@@ -45,9 +44,12 @@ const BrokenHeartSVG = ({ size = 100, color = COLORS.primary }) => (
   </Svg>
 );
 
-export default function GameOverScreen() {
+export default function GameResultScreen() {
   const router = useRouter();
-  const { score, heartsCollected, maxCombo, gameDuration, highScore } = useGameStore();
+  const { colors, isDark } = useTheme();
+  const styles = getStyles(colors);
+
+  const { score, heartsCollected, maxCombo, gameDuration, highScore, startGame, endGame } = useGameStore();
 
   const isNewHighScore = score > 0 && score >= highScore;
 
@@ -58,16 +60,18 @@ export default function GameOverScreen() {
   };
 
   const handlePlayAgain = () => {
-    router.replace('/(tabs)');
+    startGame(); // Sychronously reset game state BEFORE transitioning to avoid mounting race conditions
+    router.replace('/game/play');
   };
 
   const handleBackToHome = () => {
-    router.replace('/(tabs)');
+    endGame(); // Clean up state
+    router.replace('/(tabs)/home');
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       {/* Decorative blurs */}
       <View style={styles.blurBackground} pointerEvents="none">
@@ -76,7 +80,7 @@ export default function GameOverScreen() {
       </View>
 
       <View style={styles.content}>
-        {/* Game Over Header */}
+        {/* Header Section */}
         <MotiView
           from={{ opacity: 0, scale: 0.8, translateY: 20 }}
           animate={{ opacity: 1, scale: 1, translateY: 0 }}
@@ -84,7 +88,7 @@ export default function GameOverScreen() {
           style={styles.headerContainer}
         >
           <View style={styles.iconWrapper}>
-            <BrokenHeartSVG size={90} color={COLORS.primary} />
+            <BrokenHeartSVG size={90} color={colors.primary} />
           </View>
           <Text style={styles.title}>GAME OVER</Text>
           <Text style={styles.subtitle}>SESSION ENDED</Text>
@@ -100,7 +104,7 @@ export default function GameOverScreen() {
           {/* High Score Badge */}
           {isNewHighScore && (
             <View style={styles.highScoreBadge}>
-              <Trophy size={14} color={COLORS.white} fill={COLORS.white} />
+              <Trophy size={14} color={LIGHT_COLORS.white} fill={LIGHT_COLORS.white} />
               <Text style={styles.highScoreBadgeText}>NEW HIGH SCORE</Text>
             </View>
           )}
@@ -114,22 +118,29 @@ export default function GameOverScreen() {
           {/* Stats Grid */}
           <View style={styles.statsGrid}>
             <View style={styles.statBox}>
-              <Heart size={20} color={COLORS.primary} fill={COLORS.primary} style={styles.statIcon} />
+              <Heart size={20} color={colors.primary} fill={colors.primary} style={styles.statIcon} />
               <Text style={styles.statValue}>{heartsCollected}</Text>
               <Text style={styles.statLabel}>HEARTS</Text>
             </View>
 
             <View style={styles.statBox}>
-              <Zap size={20} color={COLORS.primary} fill={COLORS.primary} style={styles.statIcon} />
+              <Zap size={20} color={colors.primary} fill={colors.primary} style={styles.statIcon} />
               <Text style={styles.statValue}>x{maxCombo}</Text>
               <Text style={styles.statLabel}>MAX COMBO</Text>
             </View>
 
             <View style={styles.statBox}>
-              <Clock size={20} color={COLORS.primary} fill={COLORS.primary} style={styles.statIcon} />
+              <Clock size={20} color={colors.primary} fill={colors.primary} style={styles.statIcon} />
               <Text style={styles.statValue}>{formatTime(gameDuration)}</Text>
-              <Text style={styles.statLabel}>TIME</Text>
+              <Text style={styles.statLabel}>TIME SURVIVED</Text>
             </View>
+          </View>
+
+          {/* Highest Score Row */}
+          <View style={styles.highScoreRow}>
+            <Trophy size={16} color={colors.textSecondary} style={{ marginRight: 6 }} />
+            <Text style={styles.highScoreRowLabel}>HIGHEST SCORE: </Text>
+            <Text style={styles.highScoreRowValue}>{highScore}</Text>
           </View>
         </MotiView>
 
@@ -141,7 +152,7 @@ export default function GameOverScreen() {
           style={styles.buttonContainer}
         >
           <PrimaryButton
-            title="Play Again"
+            title="PLAY AGAIN"
             onPress={handlePlayAgain}
             style={styles.playButton}
           />
@@ -149,12 +160,12 @@ export default function GameOverScreen() {
             style={[styles.homeButton, SHADOWS.soft]}
             onPress={handleBackToHome}
           >
-            <Home size={18} color={COLORS.primary} />
-            <Text style={styles.homeButtonText}>Back to Home</Text>
+            <Home size={18} color={colors.primary} />
+            <Text style={styles.homeButtonText}>GO TO HOME</Text>
           </Pressable>
         </MotiView>
 
-        {/* Challenge Section */}
+        {/* Share Section */}
         <MotiView
           from={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -164,10 +175,10 @@ export default function GameOverScreen() {
           <Text style={styles.challengeTitle}>CHALLENGE A SECRET ADMIRER</Text>
           <View style={styles.challengeButtons}>
             <Pressable style={[styles.circleButton, SHADOWS.soft]}>
-              <Share2 size={18} color={COLORS.textPrimary} />
+              <Share2 size={18} color={colors.textPrimary} />
             </Pressable>
             <Pressable style={[styles.circleButton, SHADOWS.soft]}>
-              <MessageCircle size={18} color={COLORS.textPrimary} />
+              <MessageCircle size={18} color={colors.textPrimary} />
             </Pressable>
           </View>
         </MotiView>
@@ -176,10 +187,10 @@ export default function GameOverScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: typeof LIGHT_COLORS) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   blurBackground: {
     ...StyleSheet.absoluteFill,
@@ -192,7 +203,7 @@ const styles = StyleSheet.create({
     width: 250,
     height: 250,
     borderRadius: 125,
-    backgroundColor: 'rgba(194, 24, 117, 0.08)',
+    backgroundColor: 'rgba(217, 0, 108, 0.05)',
   },
   blurBottom: {
     position: 'absolute',
@@ -201,7 +212,7 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 150,
-    backgroundColor: 'rgba(255, 92, 173, 0.05)',
+    backgroundColor: 'rgba(229, 0, 114, 0.04)',
   },
   content: {
     flex: 1,
@@ -212,51 +223,43 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   iconWrapper: {
     position: 'relative',
-    marginBottom: 16,
+    marginBottom: 12,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  heartPulse: {
-    transform: [{ scale: 1 }],
   },
   title: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 32,
-    color: COLORS.primary,
+    color: colors.primary,
     letterSpacing: -1,
     textAlign: 'center',
-    textShadowColor: 'rgba(194, 24, 117, 0.2)',
-    textShadowOffset: { width: 0, height: 4 },
-    textShadowRadius: 10,
   },
   subtitle: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     letterSpacing: 4,
     marginTop: 4,
     textAlign: 'center',
   },
   glassCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.75)',
+    backgroundColor: colors.cardBackground,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.6)',
+    borderColor: colors.border,
     borderRadius: 32,
     width: '100%',
     padding: 24,
     alignItems: 'center',
-    marginBottom: 32,
-    // Glassmorphism blur
-    backdropFilter: 'blur(20px)',
-  } as any,
+    marginBottom: 24,
+  },
   highScoreBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E50072',
+    backgroundColor: colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 999,
@@ -266,42 +269,44 @@ const styles = StyleSheet.create({
   highScoreBadgeText: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 10,
-    color: COLORS.white,
+    color: LIGHT_COLORS.white,
     letterSpacing: 1,
   },
   scoreContainer: {
     alignItems: 'center',
-    paddingBottom: 20,
+    paddingBottom: 16,
     borderBottomWidth: 1.5,
-    borderBottomColor: 'rgba(232, 214, 223, 0.3)',
+    borderBottomColor: colors.border,
     width: '100%',
   },
   finalScoreValue: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 64,
-    color: COLORS.primary,
+    color: colors.primary,
     lineHeight: 70,
     letterSpacing: -2,
   },
   finalScoreLabel: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 11,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     letterSpacing: 2,
     marginTop: 4,
   },
   statsGrid: {
     flexDirection: 'row',
     width: '100%',
-    paddingTop: 20,
+    paddingVertical: 16,
     justifyContent: 'space-between',
+    borderBottomWidth: 1.5,
+    borderBottomColor: colors.border,
   },
   statBox: {
     flex: 1,
     alignItems: 'center',
     padding: 8,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(217, 0, 108, 0.03)',
     marginHorizontal: 4,
   },
   statIcon: {
@@ -311,48 +316,64 @@ const styles = StyleSheet.create({
   statValue: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 18,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   statLabel: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 8,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     letterSpacing: 1,
     marginTop: 2,
     textAlign: 'center',
   },
+  highScoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 16,
+  },
+  highScoreRowLabel: {
+    fontFamily: TYPOGRAPHY.weights.medium,
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  highScoreRowValue: {
+    fontFamily: TYPOGRAPHY.weights.bold,
+    fontSize: 15,
+    color: colors.primary,
+  },
   buttonContainer: {
     width: '100%',
-    gap: 16,
+    gap: 12,
   },
   playButton: {
-    height: 56,
+    height: 54,
+    borderRadius: 27,
   },
   homeButton: {
     flexDirection: 'row',
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: 'rgba(255, 255, 255, 0.75)',
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.cardBackground,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
     gap: 8,
   },
   homeButtonText: {
-    fontFamily: TYPOGRAPHY.weights.semiBold,
-    fontSize: 16,
-    color: COLORS.primary,
+    fontFamily: TYPOGRAPHY.weights.bold,
+    fontSize: 15,
+    color: colors.primary,
   },
   challengeContainer: {
-    marginTop: 32,
+    marginTop: 24,
     alignItems: 'center',
   },
   challengeTitle: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 10,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     letterSpacing: 1.5,
     marginBottom: 12,
     opacity: 0.65,
@@ -365,9 +386,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.75)',
+    backgroundColor: colors.cardBackground,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },

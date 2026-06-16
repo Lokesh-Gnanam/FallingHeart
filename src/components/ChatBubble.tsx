@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Check, CheckCheck, Clock } from 'lucide-react-native';
-import { COLORS, TYPOGRAPHY } from '../theme';
+import { useTheme, LIGHT_COLORS, TYPOGRAPHY } from '../theme';
 import { Message } from '../store/chatStore';
 
 interface ChatBubbleProps {
@@ -12,6 +12,8 @@ interface ChatBubbleProps {
 
 export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isCurrentUser, onVanishExpired }) => {
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  const { colors } = useTheme();
+  const styles = getStyles(colors, isCurrentUser);
 
   useEffect(() => {
     // If vanish mode is active and expiresAt is set, start the countdown
@@ -64,14 +66,14 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isCurrentUser, 
               {message.isRead ? (
                 <CheckCheck size={14} color="#FF5CAD" strokeWidth={2.5} />
               ) : (
-                <Check size={14} color={COLORS.textSecondary} style={{ opacity: 0.6 }} />
+                <Check size={14} color={colors.textSecondary} style={{ opacity: 0.6 }} />
               )}
             </View>
           )}
 
           {showVanishCountdown && (
             <View style={styles.vanishBadge}>
-              <Clock size={10} color={COLORS.primary} style={styles.vanishIcon} />
+              <Clock size={10} color={colors.primary} style={styles.vanishIcon} />
               <Text style={styles.vanishText}>{secondsLeft}s</Text>
             </View>
           )}
@@ -81,7 +83,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isCurrentUser, 
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: typeof LIGHT_COLORS, isCurrentUser: boolean) => StyleSheet.create({
   container: {
     width: '100%',
     marginVertical: 4,
@@ -100,23 +102,23 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   currentUserBubble: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: colors.primary,
     borderBottomRightRadius: 4,
-    shadowColor: COLORS.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 3,
   },
   partnerBubble: {
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: colors.cardBackground === '#FFFFFF' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(31, 22, 28, 0.6)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: colors.border,
     borderBottomLeftRadius: 4,
   },
   vanishBubble: {
     borderStyle: 'dashed',
-    borderColor: COLORS.primary,
+    borderColor: colors.primary,
     borderWidth: 1.5,
   },
   text: {
@@ -125,10 +127,10 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   currentUserText: {
-    color: COLORS.white,
+    color: LIGHT_COLORS.white,
   },
   partnerText: {
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
   },
   meta: {
     flexDirection: 'row',
@@ -145,7 +147,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.7)',
   },
   partnerTimeText: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   ticks: {
     marginLeft: 2,
@@ -165,6 +167,6 @@ const styles = StyleSheet.create({
   vanishText: {
     fontFamily: TYPOGRAPHY.weights.bold,
     fontSize: 9,
-    color: COLORS.primary,
+    color: colors.primary,
   },
 });
