@@ -6,6 +6,7 @@ import {
   Dimensions,
   StatusBar,
   Pressable,
+  BackHandler,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -171,6 +172,21 @@ export default function GamePlayScreen() {
     endGame();
     router.replace('/(tabs)/home');
   };
+
+  // Intercept hardware back button on Android
+  useEffect(() => {
+    const backAction = () => {
+      handleBackToHome();
+      return true; // Prevent default back navigation
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, []);
 
   return (
     <View style={styles.container}>

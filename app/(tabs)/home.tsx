@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Text, SafeAreaView, StatusBar, Dimensions } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, StyleSheet, Text, SafeAreaView, StatusBar, Dimensions, BackHandler } from 'react-native';
+import { useRouter, useNavigation } from 'expo-router';
 import { Heart, Trophy } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import { useGameStore } from '../../src/game/store/gameStore';
@@ -20,6 +20,7 @@ interface FloatingHeartItem {
 
 export default function GameHomeScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors);
 
@@ -32,6 +33,24 @@ export default function GameHomeScreen() {
       fetchHighScore();
     }
   }, [currentUser]);
+
+  // Intercept hardware back button to exit app when focused
+  useEffect(() => {
+    const onBackPress = () => {
+      if (navigation.isFocused()) {
+        BackHandler.exitApp();
+        return true;
+      }
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress
+    );
+
+    return () => backHandler.remove();
+  }, [navigation]);
 
   // Generate deterministic floating background hearts
   const backgroundHearts: FloatingHeartItem[] = [

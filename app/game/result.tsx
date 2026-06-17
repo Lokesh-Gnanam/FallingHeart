@@ -7,6 +7,7 @@ import {
   StatusBar,
   Dimensions,
   Pressable,
+  BackHandler,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MotiView } from 'moti';
@@ -68,6 +69,21 @@ export default function GameResultScreen() {
     endGame(); // Clean up state
     router.replace('/(tabs)/home');
   };
+
+  // Intercept hardware back button on Android
+  React.useEffect(() => {
+    const backAction = () => {
+      handleBackToHome();
+      return true; // Prevent default back navigation
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
