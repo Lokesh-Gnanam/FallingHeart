@@ -51,6 +51,9 @@ export default function GamePlayScreen() {
     incrementDuration,
     updateGameStats,
     endGame,
+    isPaused,
+    pauseGame,
+    resumeGame,
   } = useGameStore();
 
   const [hearts, setHearts] = useState<HeartData[]>([]);
@@ -70,7 +73,11 @@ export default function GamePlayScreen() {
 
   // Initialize and Reset Game when mounting
   useEffect(() => {
-    startGame();
+    if (isPaused) {
+      resumeGame();
+    } else {
+      startGame();
+    }
     setHearts([]);
     setScoreBadges([]);
     setParticles([]);
@@ -169,7 +176,7 @@ export default function GamePlayScreen() {
   };
 
   const handleBackToHome = () => {
-    endGame();
+    pauseGame();
     router.replace('/(tabs)/home');
   };
 

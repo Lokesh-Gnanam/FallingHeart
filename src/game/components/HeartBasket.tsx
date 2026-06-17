@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Dimensions } from 'react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, runOnJS, useSharedValue, withSpring, SharedValue } from 'react-native-reanimated';
-import { Heart, Plus } from 'lucide-react-native';
+import { Heart } from 'lucide-react-native';
 import { COLORS, SHADOWS } from '../../theme';
 
 interface HeartBasketProps {
@@ -65,9 +65,6 @@ export const HeartBasket: React.FC<HeartBasketProps> = ({
       >
         <View style={styles.iconContainer}>
           <Heart size={36} color={COLORS.primary} fill={COLORS.primary} />
-          <View style={styles.plusContainer}>
-            <Plus size={16} color={COLORS.white} strokeWidth={4} />
-          </View>
         </View>
       </Animated.View>
     </GestureDetector>
@@ -93,18 +90,5 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  plusContainer: {
-    position: 'absolute',
-    right: -4,
-    bottom: -4,
-    backgroundColor: COLORS.primary,
-    borderRadius: 8,
-    width: 18,
-    height: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
   },
 });

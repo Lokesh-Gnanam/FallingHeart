@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Text, SafeAreaView, StatusBar, Dimensions, BackHandler } from 'react-native';
+import { View, StyleSheet, Text, StatusBar, Dimensions, BackHandler, Pressable, Modal } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useNavigation } from 'expo-router';
 import { Heart, Trophy } from 'lucide-react-native';
 import { MotiView } from 'moti';
@@ -25,7 +26,7 @@ export default function GameHomeScreen() {
   const styles = getStyles(colors);
 
   const currentUser = useAuthStore((state) => state.user);
-  const { highScore, fetchHighScore, startGame } = useGameStore();
+  const { highScore, fetchHighScore, startGame, isPaused, clearPausedGame, score } = useGameStore();
 
   // Load high score from Supabase on mount
   useEffect(() => {
@@ -62,13 +63,66 @@ export default function GameHomeScreen() {
   ];
 
   const handlePlayGame = () => {
-    startGame(); // Explicitly reset game state in Zustand to prevent race condition on play
-    router.push('/game/play');
+    if (isPaused) {
+      router.push('/game/play');
+    } else {
+      startGame();
+      router.push('/game/play');
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <StatusBar 
+        barStyle={isDark ? 'light-content' : 'dark-content'} 
+        hidden={false}
+        translucent={true}
+        backgroundColor="transparent"
+      />
+
+      {/* Continue Game Modal Dialog */}
+      <Modal
+        visible={isPaused}
+        transparent={true}
+        animationType="fade"
+      >
+        <View style={styles.modalOverlay}>
+          <MotiView
+            from={{ opacity: 0, scale: 0.9, translateY: 20 }}
+            animate={{ opacity: 1, scale: 1, translateY: 0 }}
+            transition={{ type: 'spring', damping: 15 }}
+            style={[styles.modalCard, SHADOWS.soft]}
+          >
+            <View style={styles.modalHeartIconWrapper}>
+              <Heart size={44} color={colors.primary} fill={colors.primary} />
+            </View>
+            <Text style={styles.modalTitle}>Resume Game?</Text>
+            <Text style={styles.modalDescription}>
+              You have a game in progress with a score of {score}. Would you like to continue or start a new game?
+            </Text>
+            
+            <View style={styles.modalButtonContainer}>
+              <PrimaryButton
+                title="YES, CONTINUE"
+                onPress={() => {
+                  router.push('/game/play');
+                }}
+                style={styles.modalPrimaryButton}
+              />
+              <Pressable
+                style={[styles.modalSecondaryButton, SHADOWS.soft]}
+                onPress={() => {
+                  clearPausedGame();
+                  startGame();
+                  router.push('/game/play');
+                }}
+              >
+                <Text style={styles.modalSecondaryButtonText}>PLAY AGAIN</Text>
+              </Pressable>
+            </View>
+          </MotiView>
+        </View>
+      </Modal>
 
       {/* Decorative Atmosphere Blurs */}
       <View style={styles.blurBackground} pointerEvents="none">
@@ -299,5 +353,73 @@ const getStyles = (colors: typeof LIGHT_COLORS) => StyleSheet.create({
   playButton: {
     height: 56,
     borderRadius: 28,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: 32,
+    paddingVertical: 36,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    width: '100%',
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  modalHeartIconWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(217, 0, 108, 0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+  },
+  modalTitle: {
+    fontFamily: TYPOGRAPHY.weights.bold,
+    fontSize: 22,
+    color: colors.textPrimary,
+    marginBottom: 8,
+  },
+  modalDescription: {
+    fontFamily: TYPOGRAPHY.weights.regular,
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+    paddingHorizontal: 16,
+  },
+  modalButtonContainer: {
+    width: '100%',
+    gap: 12,
+  },
+  modalPrimaryButton: {
+    height: 52,
+    borderRadius: 26,
+  },
+  modalSecondaryButton: {
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.cardBackground,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  modalSecondaryButtonText: {
+    fontFamily: TYPOGRAPHY.weights.bold,
+    fontSize: 15,
+    color: colors.primary,
   },
 });

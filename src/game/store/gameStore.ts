@@ -12,6 +12,7 @@ interface GameState {
   highScore: number;
   isPlaying: boolean;
   isGameOver: boolean;
+  isPaused: boolean;
   startGame: () => void;
   catchHeart: (type: 'normal' | 'golden') => { points: number; isComboBonus: boolean };
   missHeart: () => void;
@@ -20,6 +21,9 @@ interface GameState {
   resetHighScore: () => void;
   fetchHighScore: () => Promise<number>;
   updateGameStats: (finalScore: number, hearts: number, combo: number) => Promise<void>;
+  pauseGame: () => void;
+  resumeGame: () => void;
+  clearPausedGame: () => void;
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -32,6 +36,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   highScore: 0,
   isPlaying: false,
   isGameOver: false,
+  isPaused: false,
 
   startGame: () => {
     set({
@@ -43,6 +48,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       gameDuration: 0,
       isPlaying: true,
       isGameOver: false,
+      isPaused: false,
     });
   },
 
@@ -80,6 +86,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       lives: nextLives,
       isGameOver: nextLives === 0,
       isPlaying: nextLives > 0,
+      isPaused: false,
     });
   },
 
@@ -91,6 +98,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({
       isPlaying: false,
       isGameOver: true,
+      isPaused: false,
     });
   },
 
@@ -173,5 +181,31 @@ export const useGameStore = create<GameState>((set, get) => ({
     } catch (e) {
       console.error('Error updating game stats:', e);
     }
+  },
+
+  pauseGame: () => {
+    set({
+      isPlaying: false,
+      isPaused: true,
+    });
+  },
+
+  resumeGame: () => {
+    set({
+      isPlaying: true,
+      isPaused: false,
+    });
+  },
+
+  clearPausedGame: () => {
+    set({
+      isPaused: false,
+      score: 0,
+      lives: 3,
+      combo: 0,
+      heartsCollected: 0,
+      maxCombo: 0,
+      gameDuration: 0,
+    });
   },
 }));
